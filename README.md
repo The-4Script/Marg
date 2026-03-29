@@ -88,7 +88,20 @@ Marg strictly aligns with the United Nations Sustainable Development Goals:
 
 ---
 
+## 👥 Team — 4Script
+
+> *Four developers. One mission. Save lives.*
+
+| 🧑‍💻 | Name | Role |
+|:---:|------|------|
+| 🔴 | **Kaustubh Bhoir** | Product + Frontend + Maps |
+| 🔴 | **Durvesh Thorat** | Backend + Firebase |
+| 🔴 | **Nipun Tamore** | AI + Gemini Integration |
+| 🔴 | **Arnav Patil** | Testing + PWA |
+
+---
+
 <div align="center">
-  <h3>🏆 Built for Google Solution Challenge 2026 India</h3>
+  <h3>🏆 Built with ❤️ for Google Solution Challenge 2026 India</h3>
   <p>Dedicated to ensuring that the road is never the reason a life is lost.</p>
 </div>
