@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, initializeFirestore, Firestore } from "firebase/firestore";
+import { getFirestore, Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "mock_key",
@@ -18,11 +18,11 @@ let db: Firestore;
 
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
-  db = initializeFirestore(app, { experimentalForceLongPolling: true });
 } else {
   app = getApp();
-  db = getFirestore(app);
 }
+
+db = getFirestore(app);
 
 const auth = getAuth(app);
 const googleAuthProvider = new GoogleAuthProvider();
