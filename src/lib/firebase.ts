@@ -3,13 +3,13 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore, initializeFirestore, Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyA050GFqyY7o_ZwEiZXSvG7pDXkf20qkbg",
-  authDomain: "marg-seven.firebaseapp.com",
-  projectId: "marg-seven",
-  storageBucket: "marg-seven.firebasestorage.app",
-  messagingSenderId: "239013306446",
-  appId: "1:239013306446:web:78af42ab6a0d5dd66e231f",
-  measurementId: "G-V8K8BP0X21"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "mock_key",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "mock_domain",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "mock_project_id",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "mock_bucket",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "mock_sender_id",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "mock_app_id",
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "mock_measurement_id"
 };
 
 // Initialize Firebase
