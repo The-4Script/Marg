@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signInWithPopup, onAuthStateChanged, User } from "firebase/auth";
+import { signInWithRedirect, onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db, googleAuthProvider } from "@/lib/firebase";
 import { Activity, ShieldAlert, HeartPulse, ArrowRight } from "lucide-react";
@@ -37,16 +37,9 @@ export default function Home() {
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
-      const res = await signInWithPopup(auth, googleAuthProvider);
-      
-      // Auto-route on active sign-in
-      const userDocRef = doc(db, "users", res.user.uid);
-      const userDocSnap = await getDoc(userDocRef);
-      if (userDocSnap.exists() && userDocSnap.data().role) {
-         router.push(`/dashboards/${userDocSnap.data().role}`);
-      } else {
-         router.push("/role-selection");
-      }
+      await signInWithRedirect(auth, googleAuthProvider);
+      // Notice: After redirect, the page will reload and Firebase will catch the auth state
+      // in the onAuthStateChanged listener at the top of this component.
     } catch (error) {
       console.error("Sign-in error:", error);
       setLoading(false);
