@@ -10,7 +10,6 @@ interface Ambulance {
   id: string;
   lat: number;
   lng: number;
-  patientType: string;
   driverName: string;
   status: string;
 }
@@ -121,7 +120,7 @@ export default function PoliceDashboard() {
 
   // Get nearest hospital for an ambulance securely
   const getNearestDestination = (ambLat: number, ambLng: number) => {
-     if (hospitals.length === 0) return { lat: 19.0760, lng: 72.8777, name: "City Hospital (Default)" };
+     if (hospitals.length === 0) return null; // No registered hospitals — don't fabricate a route
      let closest = hospitals[0];
      let minDistance = Infinity;
      hospitals.forEach(h => {
@@ -170,8 +169,8 @@ export default function PoliceDashboard() {
                <div className="space-y-4">
                   {activeAmbulances.map(amb => {
                      const dest = getNearestDestination(amb.lat, amb.lng);
-                     const dist = calculateDistance(amb.lat, amb.lng, dest.lat, dest.lng);
-                     const etaMins = dist * 1.5;
+                     const dist = dest ? calculateDistance(amb.lat, amb.lng, dest.lat, dest.lng) : null;
+                     const etaMins = dist ? dist * 1.5 : null;
 
                      return (
                         <div key={amb.id} className="bg-slate-900 border border-slate-700/60 rounded-xl p-4 relative overflow-hidden transition-all hover:bg-slate-800">
@@ -181,15 +180,20 @@ export default function PoliceDashboard() {
                            <div className="flex justify-between items-start mb-4">
                               <div>
                                  <h3 className="font-bold text-white tracking-wide">{amb.driverName}</h3>
-                                 <p className="text-xs font-semibold uppercase tracking-widest text-red-400 mt-1">{amb.patientType}</p>
                               </div>
                               <div className="text-right">
-                                 <p className="text-xl font-black text-red-500 leading-none">{Math.max(1, Math.ceil(etaMins))}m</p>
-                                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Live ETA</p>
+                                 {etaMins != null ? (
+                                   <>
+                                     <p className="text-xl font-black text-red-500 leading-none">{Math.max(1, Math.ceil(etaMins))}m</p>
+                                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Live ETA</p>
+                                   </>
+                                 ) : (
+                                   <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">No ETA</p>
+                                 )}
                               </div>
                            </div>
 
-                           {/* Card Body - Routing Details */}
+                           {/* Card Body */}
                            <div className="space-y-3">
                               <div className="flex items-start gap-3">
                                  <Navigation className="w-4 h-4 text-emerald-500 mt-0.5" />
@@ -199,22 +203,25 @@ export default function PoliceDashboard() {
                                  </div>
                               </div>
                               
-                              <div className="pl-2 border-l-2 border-slate-800 ml-1.5 h-3"></div>
-
-                              <div className="flex items-start gap-3">
-                                 <MapPin className="w-4 h-4 text-indigo-400 mt-0.5" />
-                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Routed Destination</p>
-                                    <p className="text-sm font-medium text-slate-300">{dest.name}</p>
-                                 </div>
-                              </div>
+                              {dest && (
+                                <>
+                                  <div className="pl-2 border-l-2 border-slate-800 ml-1.5 h-3"></div>
+                                  <div className="flex items-start gap-3">
+                                     <MapPin className="w-4 h-4 text-indigo-400 mt-0.5" />
+                                     <div>
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Routed Destination</p>
+                                        <p className="text-sm font-medium text-slate-300">{dest.name}</p>
+                                     </div>
+                                  </div>
+                                </>
+                              )}
                            </div>
 
-                           {/* Clearance Requirement Strip */}
+                           {/* Clearance Strip */}
                            <div className="mt-5 pt-3 border-t border-slate-800 flex items-center justify-between">
                               <span className="flex items-center gap-2 text-xs font-bold text-amber-500 uppercase tracking-widest">
                                  <RouteIcon className="w-3.5 h-3.5" />
-                                 {dist.toFixed(1)} km Transit Route
+                                 {dist != null ? `${dist.toFixed(1)} km Transit Route` : "Route Pending"}
                               </span>
                               <span className="text-xs font-bold text-red-500 animate-pulse uppercase tracking-wider">CLEARANCE REQ</span>
                            </div>
@@ -231,18 +238,18 @@ export default function PoliceDashboard() {
       <div className="flex-1 relative bg-slate-900 min-h-[500px]">
         <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "YOUR_KEY_HERE"}>
           <Map 
+            defaultCenter={activeAmbulances.length > 0 ? { lat: activeAmbulances[0].lat, lng: activeAmbulances[0].lng } : { lat: 19.0760, lng: 72.8777 }} 
             defaultZoom={13} 
-            center={activeAmbulances.length > 0 ? { lat: activeAmbulances[0].lat, lng: activeAmbulances[0].lng } : { lat: 19.0760, lng: 72.8777 }} 
             disableDefaultUI={true}
+            gestureHandling="greedy"
             mapId="police-command-map"
-            styles={DARK_MAP_STYLES}
           >
              {activeAmbulances.map(amb => {
                 const dest = getNearestDestination(amb.lat, amb.lng);
                 return (
                    <React.Fragment key={amb.id}>
-                      {/* Sub-component handles standard Polyline injection */}
-                      <RouteLine origin={{lat: amb.lat, lng: amb.lng}} destination={{lat: dest.lat, lng: dest.lng}} />
+                      {/* Route line only if a real registered hospital destination exists */}
+                      {dest && <RouteLine origin={{lat: amb.lat, lng: amb.lng}} destination={{lat: dest.lat, lng: dest.lng}} />}
                       
                       {/* Active Ambulance Marker */}
                       <AdvancedMarker position={{lat: amb.lat, lng: amb.lng}} title={amb.driverName}>
@@ -251,12 +258,14 @@ export default function PoliceDashboard() {
                         </div>
                       </AdvancedMarker>
 
-                      {/* Destination Hospital Marker */}
-                      <AdvancedMarker position={{lat: dest.lat, lng: dest.lng}} title={dest.name}>
-                        <div className="bg-slate-900 border border-indigo-500/50 p-1.5 rounded-sm flex items-center justify-center opacity-80">
-                           <span className="text-lg">🏥</span>
-                        </div>
-                      </AdvancedMarker>
+                      {/* Destination Hospital Marker — only if registered hospital found */}
+                      {dest && (
+                        <AdvancedMarker position={{lat: dest.lat, lng: dest.lng}} title={dest.name}>
+                          <div className="bg-slate-900 border border-indigo-500/50 p-1.5 rounded-sm flex items-center justify-center opacity-80">
+                             <span className="text-lg">🏥</span>
+                          </div>
+                        </AdvancedMarker>
+                      )}
                    </React.Fragment>
                 );
              })}

@@ -10,52 +10,14 @@ interface Ambulance {
   id: string;
   lat: number;
   lng: number;
-  patientType: string;
   driverName: string;
   status: string;
 }
 
-const CHECKLISTS: Record<string, string[]> = {
-  "Cardiac Arrest": [
-    "Prepare defibrillator",
-    "Cardiac team on standby",
-    "ICU bed ready"
-  ],
-  "Trauma/Accident": [
-    "Surgical team ready",
-    "Blood bank notified",
-    "OT prepared"
-  ],
-  "Burns": [
-    "Burns unit ready",
-    "Oxygen available",
-    "Morphine prepared"
-  ],
-  "Neurological": [
-    "CT scan ready",
-    "Neurology team on standby"
-  ],
-  "Maternity": [
-    "OT ready",
-    "Gynecology team on standby",
-    "NICU prepared"
-  ],
-  "General Emergency": [
-    "Emergency bed ready",
-    "On-call doctor notified"
-  ]
-};
-
-const getPatientIcon = (type: string) => {
-  switch (type) {
-    case "Cardiac Arrest": return <HeartPulse className="w-5 h-5" />;
-    case "Trauma/Accident": return <Activity className="w-5 h-5" />;
-    case "Burns": return <Flame className="w-5 h-5" />;
-    case "Neurological": return <Brain className="w-5 h-5" />;
-    case "Maternity": return <Baby className="w-5 h-5" />;
-    default: return <Stethoscope className="w-5 h-5" />;
-  }
-};
+const EMERGENCY_CHECKLIST = [
+  "Emergency bed ready",
+  "On-call doctor notified"
+];
 
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
   const R = 6371;
@@ -205,7 +167,7 @@ export default function HospitalDashboard() {
       ) : (
          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {routedAmbulances.map(amb => {
-               const checkItems = CHECKLISTS[amb.patientType] || CHECKLISTS["General Emergency"];
+               const checkItems = EMERGENCY_CHECKLIST;
                
                return (
                  <div key={amb.id} className="bg-white border-2 border-slate-200 shadow-sm rounded-xl overflow-hidden flex flex-col">
@@ -223,19 +185,12 @@ export default function HospitalDashboard() {
                           </div>
                        </div>
 
-                       {/* Patient & Driver Info */}
+                       {/* Driver Info */}
                        <div className="space-y-4">
                          <div>
                             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Driver Manifest</p>
                             <p className="font-semibold text-slate-900 flex items-center gap-2">
                               {amb.driverName}
-                            </p>
-                         </div>
-                         <div>
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Patient Vitals Alert</p>
-                            <p className="font-bold text-red-600 flex items-center gap-2 text-lg">
-                              <span className="bg-red-50 p-1.5 rounded-md border border-red-100">{getPatientIcon(amb.patientType)}</span>
-                              {amb.patientType}
                             </p>
                          </div>
                        </div>
@@ -245,7 +200,7 @@ export default function HospitalDashboard() {
                     <div className="bg-slate-50 mt-auto px-5 py-4 border-t border-slate-200">
                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Triage Protocol</p>
                        <ul className="space-y-2">
-                          {checkItems.map((item, idx) => (
+                          {checkItems.map((item: string, idx: number) => (
                              <li key={idx} className="flex items-start gap-3">
                                 <div className="mt-0.5 w-4 h-4 bg-slate-200 border-2 border-slate-300 rounded border-dashed flex-shrink-0"></div>
                                 <span className="text-sm font-semibold text-slate-700 leading-snug">{item}</span>
