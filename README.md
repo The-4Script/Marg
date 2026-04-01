@@ -62,6 +62,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your_firebase_app_id
 NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
 
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+HUGGING_FACE_API_TOKEN=your_huggingface_api_key
 ```
 
 ### 4. Ignite the engines
