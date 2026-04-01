@@ -184,6 +184,7 @@ export default function AmbulanceDashboard() {
   const [emergency, setEmergency] = useState(false);
   const [voiceState, setVoiceState] = useState<"idle" | "recording" | "processing" | "done">("idle");
   const [voiceBase64, setVoiceBase64] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [position, setPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [initialPosition, setInitialPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [zoom, setZoom] = useState(17);
@@ -270,7 +271,34 @@ export default function AmbulanceDashboard() {
         const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         const reader = new FileReader();
         reader.readAsDataURL(blob);
-        reader.onloadend = () => { setVoiceBase64(reader.result as string); setVoiceState("done"); };
+        reader.onloadend = async () => {
+          const base64 = reader.result as string;
+          setVoiceBase64(base64);
+          setVoiceState("done");
+          
+          if (!user) return;
+          
+          setIsAnalyzing(true);
+          try {
+            const res = await fetch("/api/analyze-voice", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ audioBase64: base64 })
+            });
+            const data = await res.json();
+            
+            if (data.status === "success" || data.transcript) {
+              await updateDoc(doc(db, "ambulances", user.uid), {
+                aiSummary: data.condition ? JSON.stringify(data.condition) : "",
+                aiTranscription: data.transcript || "Transcription unavailable"
+              });
+            }
+          } catch (e) {
+            console.error("AI analysis failed", e);
+          } finally {
+            setIsAnalyzing(false);
+          }
+        };
       };
       mr.start();
       setVoiceState("recording");

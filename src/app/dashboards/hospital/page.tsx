@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc, updateDoc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import { MapPin, Activity, ShieldAlert, HeartPulse, Flame, Brain, Baby, Stethoscope, AlertTriangle, Users, Bed } from "lucide-react";
+import { MapPin, Activity, ShieldAlert, HeartPulse, Flame, Brain, Baby, Stethoscope, AlertTriangle, Users, Bed, Navigation } from "lucide-react";
 
 interface Ambulance {
   id: string;
@@ -12,6 +12,51 @@ interface Ambulance {
   lng: number;
   driverName: string;
   status: string;
+  voiceData?: string;
+  aiSummary?: string;
+  aiTranscription?: string;
+}
+
+function VoiceNotePlayer({ audioBase64 }: { audioBase64: string }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  return (
+    <div className="mt-4 p-3 bg-slate-900 rounded-xl border border-slate-700 flex items-center gap-3 shadow-lg">
+      <audio 
+        ref={audioRef} 
+        src={audioBase64} 
+        onEnded={() => setIsPlaying(false)} 
+        className="hidden" 
+      />
+      <button 
+        onClick={togglePlay}
+        className="w-10 h-10 rounded-full bg-cyan-500 flex items-center justify-center text-slate-950 hover:bg-cyan-400 transition-all active:scale-95"
+      >
+        {isPlaying ? (
+          <Activity className="w-5 h-5 animate-pulse" />
+        ) : (
+          <Activity className="w-5 h-5" />
+        )}
+      </button>
+      <div className="flex-1">
+        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 leading-none">Driver Voice Intel</p>
+        <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+          <div className="h-full bg-cyan-500 transition-all duration-300" style={{ width: isPlaying ? '100%' : '0%' }} />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 const EMERGENCY_CHECKLIST = [
@@ -168,6 +213,7 @@ export default function HospitalDashboard() {
          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {routedAmbulances.map(amb => {
                const checkItems = EMERGENCY_CHECKLIST;
+               const aiData = amb.aiSummary ? JSON.parse(amb.aiSummary) : null;
                
                return (
                  <div key={amb.id} className="bg-white border-2 border-slate-200 shadow-sm rounded-xl overflow-hidden flex flex-col">
@@ -185,14 +231,39 @@ export default function HospitalDashboard() {
                           </div>
                        </div>
 
-                       {/* Driver Info */}
+                       {/* Driver & AI Condition Info */}
                        <div className="space-y-4">
                          <div>
                             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Driver Manifest</p>
                             <p className="font-semibold text-slate-900 flex items-center gap-2">
-                              {amb.driverName}
+                               {amb.driverName}
                             </p>
                          </div>
+
+                         {/* AI Condition Summary Payload */}
+                         {aiData && (
+                            <div className={`p-4 rounded-xl border ${aiData.priority === 'CRITICAL' ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
+                               <div className="flex items-center gap-2 mb-2">
+                                  {aiData.priority === 'CRITICAL' ? <ShieldAlert className="w-4 h-4 text-red-600" /> : <Activity className="w-4 h-4 text-blue-600" />}
+                                  <span className={`text-[10px] font-black uppercase tracking-widest ${aiData.priority === 'CRITICAL' ? 'text-red-600' : 'text-blue-600'}`}>
+                                     AI Condition Pulse: {aiData.priority}
+                                  </span>
+                               </div>
+                               <p className="text-sm font-bold text-slate-900 leading-tight">
+                                  {amb.aiTranscription || aiData.summary}
+                               </p>
+                               <div className="mt-2 flex flex-wrap gap-1">
+                                  {aiData.symptoms.split(", ").map((tag: string, i: number) => (
+                                     <span key={i} className="text-[9px] font-black uppercase bg-white border border-slate-200 px-1.5 py-0.5 rounded text-slate-600">
+                                        {tag}
+                                     </span>
+                                  ))}
+                               </div>
+                            </div>
+                         )}
+
+                         {/* Voice Note Playback */}
+                         {amb.voiceData && <VoiceNotePlayer audioBase64={amb.voiceData} />}
                        </div>
                     </div>
 
