@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { collection, query, where, onSnapshot, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { APIProvider, Map, AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
+import { APIProvider, Map, AdvancedMarker, useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { ShieldAlert, Crosshair, MapPin, Route as RouteIcon, Navigation } from "lucide-react";
 
 interface Ambulance {
@@ -21,23 +21,51 @@ interface Hospital {
   name: string;
 }
 
-// Custom internal component to render the Polyline safely hooking into the map instance
-const RouteLine = ({ origin, destination }: { origin: { lat: number; lng: number }; destination: { lat: number; lng: number } }) => {
+// Road-based route renderer using Google Maps DirectionsService
+const DirectionsRouteLine = ({
+  origin,
+  destination,
+}: {
+  origin: { lat: number; lng: number };
+  destination: { lat: number; lng: number };
+}) => {
   const map = useMap();
+  const routesLib = useMapsLibrary("routes");
+
   useEffect(() => {
-    if (!map) return;
-    const polyline = new google.maps.Polyline({
-      path: [origin, destination],
-      geodesic: true,
-      strokeColor: '#ef4444', // red-500
-      strokeOpacity: 0.8,
-      strokeWeight: 4,
-      map: map,
+    if (!map || !routesLib) return;
+
+    const directionsService = new routesLib.DirectionsService();
+    const directionsRenderer = new routesLib.DirectionsRenderer({
+      map,
+      suppressMarkers: true, // We draw our own markers
+      polylineOptions: {
+        strokeColor: "#ef4444",
+        strokeOpacity: 0.85,
+        strokeWeight: 5,
+      },
     });
+
+    directionsService.route(
+      {
+        origin,
+        destination,
+        travelMode: routesLib.TravelMode.DRIVING,
+      },
+      (result, status) => {
+        if (status === "OK" && result) {
+          directionsRenderer.setDirections(result);
+        }
+      }
+    );
+
     return () => {
-      polyline.setMap(null);
+      directionsRenderer.setMap(null);
     };
-  }, [map, origin, destination]);
+  // Re-fetch route when coords change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, routesLib, origin.lat, origin.lng, destination.lat, destination.lng]);
+
   return null;
 };
 
@@ -249,7 +277,7 @@ export default function PoliceDashboard() {
                 return (
                    <React.Fragment key={amb.id}>
                       {/* Route line only if a real registered hospital destination exists */}
-                      {dest && <RouteLine origin={{lat: amb.lat, lng: amb.lng}} destination={{lat: dest.lat, lng: dest.lng}} />}
+                      {dest && <DirectionsRouteLine origin={{lat: amb.lat, lng: amb.lng}} destination={{lat: dest.lat, lng: dest.lng}} />}
                       
                       {/* Active Ambulance Marker */}
                       <AdvancedMarker position={{lat: amb.lat, lng: amb.lng}} title={amb.driverName}>
